@@ -1,0 +1,102 @@
+---
+title: "week 4 hw"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(readr) # import library to read csv
+library(dplyr) # import library to do left joins
+library(tidyr) # import library for reshaping data
+```
+
+```{r}
+final_maternal_mortality_data <- read_csv("final_maternal_mortality_data.csv", show_col_types = FALSE) # read final_maternal_mortality_data.csv
+final_infant_mortality_data <- read_csv("final_infant_mortality_data.csv", show_col_types = FALSE) # read final_infant_mortality_data.csv
+final_life_expectancy_data <- read_csv("final_life_expectancy_data.csv", show_col_types = FALSE) # read final_life_expectancy_data.csv
+```
+
+```{r}
+# Exercise 1
+
+# join all three tables based on name
+merged_data <- final_life_expectancy_data %>%
+  left_join(final_infant_mortality_data, by = c("name", "region")) %>% # join infant mortality data
+  left_join(final_maternal_mortality_data, by = c("name", "region")) # join maternal mortality data
+
+```
+
+```{r}
+# Clean and standardize column names
+merged_data_final <- merged_data %>%
+  select(name, region, years, `deaths/1000`, `deaths/100000`) %>% # select only needed columns
+  rename(
+    life_expectancy_years = years, # rename for clarity
+    infant_mortality_per_1000 = `deaths/1000`, # rename for clarity
+    maternal_mortality_per_100000 = `deaths/100000` # rename for clarity
+  )
+
+write_csv(merged_data_final, "merged_cia_data.csv") # save the merged dataset
+```
+
+
+```{r}
+# Verification
+merged_cia_data_csv <- read_csv("merged_cia_data.csv", show_col_types = FALSE) # read merged_cia_data.csv
+cat("Exercise 1 Verification:\n") # eye candy
+str(merged_cia_data_csv) # print summary of df
+```
+
+
+
+```{r}
+# Exercise 2: Aggregate by region
+
+# Read the merged data
+merged_cia_data_csv <- read_csv("merged_cia_data.csv", show_col_types = FALSE) # load the merged dataset
+
+# Group by region and calculate mean
+aggregated_data <- merged_cia_data_csv %>%
+  group_by(region) %>% # group countries by their region
+  summarise(
+    avg_life_expectancy = round(mean(life_expectancy_years, na.rm = TRUE), 2), # calculate mean life expectancy
+    avg_infant_mortality = round(mean(infant_mortality_per_1000, na.rm = TRUE), 2), # calculate mean infant mortality
+    avg_maternal_mortality = round(mean(maternal_mortality_per_100000, na.rm = TRUE), 2), # calculate mean maternal mortality
+  )
+
+write_csv(aggregated_data, "aggregated_by_region.csv") # save the aggregated dataset
+```
+
+
+```{r}
+# Verification
+aggregated_data_csv <- read_csv("aggregated_by_region.csv", show_col_types = FALSE) # read aggregated_by_region.csv
+cat("\nExercise 2 Verification:\n")
+str(aggregated_data_csv) # print summary of df
+```
+
+
+```{r}
+# Exercise 3: Reshape to long format
+
+# Read the merged data
+merged_cia_data_csv <- read_csv("merged_cia_data.csv", show_col_types = FALSE) # load the merged dataset
+
+# Reshape from wide to long format
+long_data <- merged_cia_data_csv %>%
+  select(-region) %>% # remove region column
+  pivot_longer(
+    cols = c(life_expectancy_years, infant_mortality_per_1000, maternal_mortality_per_100000), # columns to pivot
+    names_to = "indicator", # new column for indicator names
+    values_to = "value" # new column for values
+  )
+
+write_csv(long_data, "long_format_cia_data.csv") # save the long format dataset
+
+# Verification
+long_format_cia_data_csv <- read_csv("long_format_cia_data.csv", show_col_types = FALSE) # read long_format_cia_data.csv
+cat("\nExercise 3 Verification:\n")
+str(long_format_cia_data_csv) # print summary of df
+```
+
